@@ -1,3 +1,57 @@
+# apiVersion: kubeflow.org/v1beta1
+# kind: Experiment
+# metadata:
+#   name: example-experiment
+#   namespace: kubeflow-user-example-com
+# spec:
+#   objective:
+#     type: maximize
+#     goal: 0.99
+#     objectiveMetricName: accuracy
+#   algorithm:
+#     algorithmName: grid
+#   parameters:
+#   - name: learning_rate
+#     parameter_type: double
+#     min: 0.001
+#     max: 0.1
+#   - name: batch_size
+#     parameter_type: int
+#     min: 16
+#     max: 128
+#   trialTemplate:
+#     spec:
+#       primaryContainerName: training-container  # Add this line
+#       successCondition: "status.conditions[?(@.type=='Succeeded')].status=='True'"
+#       failureCondition: "status.conditions[?(@.type=='Failed')].status=='True'"
+#       trial:
+#         apiVersion: batch/v1
+#         kind: Job
+#         spec:
+#           template:
+#             spec:
+#               containers:
+#               - name: training-container  # Make sure this matches `primaryContainerName`
+#                 image: your-training-image
+#                 command:
+#                 - "python"
+#                 - "train.py"
+#                 env:
+#                 - name: PARAM_LEARNING_RATE
+#                   valueFrom:
+#                     fieldRef:
+#                       fieldPath: spec.containers[0].env[0].value
+#                 - name: PARAM_BATCH_SIZE
+#                   valueFrom:
+#                     fieldRef:
+#                       fieldPath: spec.containers[0].env[1].value
+#               restartPolicy: Never
+#   maxTrialCount: 10
+#   maxFailedTrialCount: 3
+#   parallelTrialCount: 2
+#   minAvailableTrialCount: 1
+
+
 apiVersion: kubeflow.org/v1beta1
 kind: Experiment
 metadata:
@@ -5,48 +59,54 @@ metadata:
   namespace: kubeflow-user-example-com
 spec:
   objective:
-    type: maximize
-    goal: 0.99
-    objectiveMetricName: accuracy
+    type: minimize
+    goal: 0.001
+    objectiveMetricName: loss
   algorithm:
-    algorithmName: grid
+    algorithmName: random
   parameters:
-  - name: learning_rate
-    parameter_type: double
-    min: 0.001
-    max: 0.1
-  - name: batch_size
-    parameter_type: int
-    min: 16
-    max: 128
+    - name: learning_rate
+      parameter_type: double
+      feasible_space:
+        min: "0.01"
+        max: "0.05"
+    - name: batch_size
+      parameter_type: int
+      feasible_space:
+        min: "80"
+        max: "100"
   trialTemplate:
-    spec:
-      primaryContainerName: training-container  # Add this line
-      successCondition: "status.conditions[?(@.type=='Succeeded')].status=='True'"
-      failureCondition: "status.conditions[?(@.type=='Failed')].status=='True'"
-      trial:
-        apiVersion: batch/v1
-        kind: Job
-        spec:
-          template:
-            spec:
-              containers:
-              - name: training-container  # Make sure this matches `primaryContainerName`
+    primaryContainerName: training-container
+    trialParameters:
+      - name: learningRate
+        description: Learning rate for the training model
+        reference: learning_rate
+      - name: batchSize
+        description: Batch size for the model
+        reference: batch_size
+    trialSpec:
+      apiVersion: batch/v1
+      kind: Job
+      spec:
+        template:
+          spec:
+            containers:
+              - name: training-container
                 image: your-training-image
                 command:
-                - "python"
-                - "train.py"
+                  - "python"
+                  - "train.py"
                 env:
-                - name: PARAM_LEARNING_RATE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: spec.containers[0].env[0].value
-                - name: PARAM_BATCH_SIZE
-                  valueFrom:
-                    fieldRef:
-                      fieldPath: spec.containers[0].env[1].value
-              restartPolicy: Never
-  maxTrialCount: 10
+                  - name: PARAM_LEARNING_RATE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: spec.containers[0].env[0].value
+                  - name: PARAM_BATCH_SIZE
+                    valueFrom:
+                      fieldRef:
+                        fieldPath: spec.containers[0].env[1].value
+            restartPolicy: Never
+  maxTrialCount: 7
   maxFailedTrialCount: 3
   parallelTrialCount: 2
   minAvailableTrialCount: 1
