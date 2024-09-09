@@ -2,7 +2,7 @@ apiVersion: "kubeflow.org/v1beta1"
 kind: Experiment
 metadata:
   name: h2o-automl-tuning
-  namespace: kubeflow
+  namespace: kubeflow-user-example-com
 spec:
   objective:
     type: minimize
