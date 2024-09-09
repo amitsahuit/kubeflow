@@ -1,0 +1,32 @@
+apiVersion: "kubeflow.org/v1beta1"
+kind: Experiment
+metadata:
+  name: h2o-automl-tuning
+  namespace: kubeflow
+spec:
+  objective:
+    type: minimize
+    goal: 0.01
+    objectiveMetricName: logloss
+  algorithm:
+    algorithmName: random
+  parameters:
+    - name: max_depth
+      parameterType: int
+      feasibleSpace:
+        min: "3"
+        max: "10"
+    - name: learn_rate
+      parameterType: double
+      feasibleSpace:
+        min: "0.01"
+        max: "0.3"
+  trialTemplate:
+    primaryContainerName: training-container
+    trialParameters:
+      - name: max_depth
+        reference: max_depth
+      - name: learn_rate
+        reference: learn_rate
+    primaryPodLabels:
+      training-container: "{{ .Trial }}"
