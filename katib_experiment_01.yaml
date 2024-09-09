@@ -1,32 +1,50 @@
-apiVersion: "kubeflow.org/v1beta1"
+apiVersion: kubeflow.org/v1beta1
 kind: Experiment
 metadata:
-  name: h2o-automl-tuning
-  namespace: kubeflow-user-example-com
+  name: example-experiment
 spec:
   objective:
-    type: minimize
-    goal: 0.01
-    objectiveMetricName: logloss
+    type: maximize
+    goal: 0.99
+    objectiveMetricName: accuracy
   algorithm:
-    algorithmName: random
+    algorithmName: grid
   parameters:
-    - name: max_depth
-      parameterType: int
-      feasibleSpace:
-        min: "3"
-        max: "10"
-    - name: learn_rate
-      parameterType: double
-      feasibleSpace:
-        min: "0.01"
-        max: "0.3"
+  - name: learning_rate
+    parameter_type: double
+    min: 0.001
+    max: 0.1
+  - name: batch_size
+    parameter_type: int
+    min: 16
+    max: 128
   trialTemplate:
-    primaryContainerName: training-container
-    trialParameters:
-      - name: max_depth
-        reference: max_depth
-      - name: learn_rate
-        reference: learn_rate
-    primaryPodLabels:
-      training-container: "{{ .Trial }}"
+    spec:
+      successCondition: "status.conditions[?(@.type=='Succeeded')].status=='True'"
+      failureCondition: "status.conditions[?(@.type=='Failed')].status=='True'"
+      trial:
+        apiVersion: batch/v1
+        kind: Job
+        spec:
+          template:
+            spec:
+              containers:
+              - name: training-container
+                image: your-training-image
+                command:
+                - "python"
+                - "train.py"
+                env:
+                - name: PARAM_LEARNING_RATE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.containers[0].env[0].value
+                - name: PARAM_BATCH_SIZE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: spec.containers[0].env[1].value
+              restartPolicy: Never
+  maxTrialCount: 10
+  maxFailedTrialCount: 3
+  parallelTrialCount: 2
+  minAvailableTrialCount: 1
