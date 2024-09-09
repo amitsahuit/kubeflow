@@ -51,7 +51,6 @@
 #   parallelTrialCount: 2
 #   minAvailableTrialCount: 1
 
-
 apiVersion: kubeflow.org/v1beta1
 kind: Experiment
 metadata:
@@ -66,22 +65,22 @@ spec:
     algorithmName: random
   parameters:
     - name: learning_rate
-      parameter_type: double
-      feasible_space:
+      parameterType: double
+      feasibleSpace:
         min: "0.01"
         max: "0.05"
     - name: batch_size
-      parameter_type: int
-      feasible_space:
+      parameterType: int
+      feasibleSpace:
         min: "80"
         max: "100"
   trialTemplate:
     primaryContainerName: training-container
     trialParameters:
-      - name: learningRate
+      - name: learning_rate
         description: Learning rate for the training model
         reference: learning_rate
-      - name: batchSize
+      - name: batch_size
         description: Batch size for the model
         reference: batch_size
     trialSpec:
@@ -98,13 +97,9 @@ spec:
                   - "train.py"
                 env:
                   - name: PARAM_LEARNING_RATE
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: spec.containers[0].env[0].value
+                    value: ${trialParameters.learning_rate}
                   - name: PARAM_BATCH_SIZE
-                    valueFrom:
-                      fieldRef:
-                        fieldPath: spec.containers[0].env[1].value
+                    value: ${trialParameters.batch_size}
             restartPolicy: Never
   maxTrialCount: 7
   maxFailedTrialCount: 3
