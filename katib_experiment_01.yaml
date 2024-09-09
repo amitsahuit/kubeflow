@@ -20,6 +20,7 @@ spec:
     max: 128
   trialTemplate:
     spec:
+      primaryContainerName: training-container  # Add this line
       successCondition: "status.conditions[?(@.type=='Succeeded')].status=='True'"
       failureCondition: "status.conditions[?(@.type=='Failed')].status=='True'"
       trial:
@@ -29,7 +30,7 @@ spec:
           template:
             spec:
               containers:
-              - name: training-container
+              - name: training-container  # Make sure this matches `primaryContainerName`
                 image: your-training-image
                 command:
                 - "python"
